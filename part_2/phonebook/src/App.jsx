@@ -1,20 +1,14 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
+import Filter from './components/Filter'
+import PersonForm from './components/PersonForm'
+import Persons from './components/Persons'
 
-const Names = ({ person }) => {
-  return (
-    <div>
-      {person.name} {person.number}
-    </div>
-  )
-}
 
 const App = (props) => {
   const [persons, setPersons] = useState(props.persons)
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const nameInputRef = useRef(null)
-  const numberInputRef = useRef(null)
 
   const addName= (event) => {
     event.preventDefault()
@@ -42,7 +36,6 @@ const App = (props) => {
     setPersons(persons.concat(nameObject))
     setNewName('')
     setNewNumber('')
-    nameInputRef.current.focus()
   }
 
   const handleNameChange = (event) => {
@@ -64,30 +57,17 @@ const App = (props) => {
   return (
     <div>
       <h2>Phonebook</h2>
-      <div>
-        filter shown with:{""}
-        <input value={searchTerm} onChange={handleSearchChange} />
-      </div>
-      <h3>add a new</h3>
-      <form onSubmit={addName}>
-        <div>
-          name: <input ref={nameInputRef} value={newName} onChange={handleNameChange} onKeyDown={(e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      numberInputRef.current.focus()
-     }}} />
-        </div>
-        <div>
-          number: <input ref={numberInputRef} value={newNumber} onChange={handleNumberChange} />
-        </div>
-        <div>
-          <button type='submit'>add</button>
-        </div>
-      </form>
-      <h2>Numbers</h2>
-      {filteredPersons.map((person) => {
-        return <Names key={person.id} person={person} />
-      })}
+      <Filter searchTerm={searchTerm} handleSearchChange={handleSearchChange} />
+      <h3>Add a new</h3>
+      <PersonForm
+        newName={newName}
+        newNumber={newNumber}
+        handleNameChange={handleNameChange}
+        handleNumberChange={handleNumberChange}
+        addName={addName}
+      />
+      <h3>Numbers</h3>
+      <Persons persons={filteredPersons} />
     </div>
   )
 }
