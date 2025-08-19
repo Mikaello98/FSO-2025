@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import personService from './services/persons'
 import Filter from './components/Filter'
 import PersonForm from './components/PersonForm'
 import Persons from './components/Persons'
+import Notification from './components/Notification'
 
 
 const App = (props) => {
@@ -10,12 +11,20 @@ const App = (props) => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [notification, setNotification] = useState({ message: null, type: null })
 
   useEffect(() => {
-    axios.get('http://localhost:3001/persons').then((response) => {
-      setPersons(response.data)
+    personService.getAll().then(initialPersons => {
+      setPersons(initialPersons)
     })
   }, [])
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type })
+    setTimeout(() => {
+      setNotification({ message: null, type: null })
+    }, 5000)
+  }
 
   const addName= (event) => {
     event.preventDefault()
@@ -24,25 +33,49 @@ const App = (props) => {
     const trimmedNumber = newNumber.trim()
 
     if (!trimmedName || !trimmedNumber) {
-      alert('Please enter both  a name and a number')
+      showNotification('Please enter both  a name and a number')
       return
     }
 
-    if (persons.some(
-        person => person.name.toLowerCase() === newName.toLowerCase()
-    )) {
-        alert(`${trimmedName} is already in the phonebook`)
-        return
+    const existingPerson = persons.find(
+      person => person.name.toLowerCase() === trimmedName.toLowerCase()
+    )
+
+    if (existingPerson) {
+      if (window.confirm(
+        `${trimmedName} is already in the phonebook. Replace the old number with a new one?`
+      )) {
+        const updatedPerson = { ...existingPerson, number: trimmedNumber }
+
+        personService
+          .update(existingPerson.id, updatedPerson)
+          .then(returnedPerson => {
+            setPersons(persons.map(p => p.id !== existingPerson.id ? p : returnedPerson))
+            setNewName('')
+            setNewNumber('')
+            showNotification(`Updated ${returnedPerson.name}'s number`)
+          })
+          .catch(error => {
+            showNotification(
+              `The person '${existingPerson.name} was already removed from the server`,
+              'error'
+            )
+            setPersons(persons.filter(p => p.id !== existingPerson.id))
+          })
+      }
+      return
     }
 
     const nameObject = {
-      id: Math.max(0, ...persons.map(p => p.id || 0)) + 1,
       name: trimmedName,
       number: trimmedNumber,
     }
-    setPersons(persons.concat(nameObject))
-    setNewName('')
-    setNewNumber('')
+    personService.create(nameObject).then(returnedPerson => {
+        setPersons(persons.concat(returnedPerson))
+        setNewName('')
+        setNewNumber('')
+        showNotification(`Added ${returnedPerson.name}`)
+      })
   }
 
   const handleNameChange = (event) => {
@@ -64,6 +97,7 @@ const App = (props) => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={notification.message} type={notification.type} />
       <Filter searchTerm={searchTerm} handleSearchChange={handleSearchChange} />
       <h3>Add a new</h3>
       <PersonForm
@@ -74,7 +108,7 @@ const App = (props) => {
         addName={addName}
       />
       <h3>Numbers</h3>
-      <Persons persons={filteredPersons} />
+      <Persons persons={filteredPersons} setPersons={setPersons} showNotification={showNotification} />
     </div>
   )
 }

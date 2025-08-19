@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import './index.css'
 
 const persons = [
   { id: 1, name: 'Arto Hellas', number: '040-123456' },
