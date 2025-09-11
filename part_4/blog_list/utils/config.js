@@ -14,7 +14,7 @@ const DEV_MONGODB_URI = `mongodb+srv://${USER}:${PASSWORD}@cluster0.lphmomu.mong
 const TEST_MONGODB_URI = process.env.TEST_MONGODB_URI
 
 const MONGODB_URI = process.env.NODE_ENV === 'test'
-  ? TEST_MONGODB_URI
+  ? (TEST_MONGODB_URI || DEV_MONGODB_URI)
   : DEV_MONGODB_URI
 
 

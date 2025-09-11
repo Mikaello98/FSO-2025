@@ -1,12 +1,26 @@
 require('dotenv').config()
 const supertest = require('supertest')
 const mongoose = require('mongoose')
-const { test } = require('node:test')
+const { test, beforeEach, after } = require('node:test')
 const assert = require('node:assert')
 const app = require('../index')
 const Blog = require('../models/blog')
 
 const api = supertest(app)
+
+let blogToDelete
+
+beforeEach(async () => {
+  await Blog.deleteMany({})
+
+  const initialBlogs = [
+    { title: 'Blog 1', author: 'Author 1', url: 'url1.com', likes: 5 },
+    { title: 'Blog 2', author: 'Author 2', url: 'url2.com', likes: 3 }
+  ]
+
+  const savedBlogs = await Blog.insertMany(initialBlogs)
+  blogToDelete = savedBlogs[0]
+})
 
 test('blogs are returned as JSON and correct amount', async () => {
   await Blog.deleteMany({})
@@ -125,6 +139,72 @@ test('missing title or url returns 400', async () => {
     assert.strictEqual(blogsAtEnd.length, 0)
 })
 
-test('close DB connection', async () => {
+test('a blog can be deleted', async () => {
+  const blogsAtStart = await Blog.find({})
+  assert.strictEqual(blogsAtStart.length, 2)
+
+  await api
+    .delete(`/api/blogs/${blogToDelete.id}`)
+    .expect(204)
+
+    const blogsAtEnd = await Blog.find({})
+    assert.strictEqual(blogsAtEnd.length, blogsAtStart.length - 1)
+
+    const titles = blogsAtEnd.map(b => b.title)
+    assert(!titles.includes(blogToDelete.title))
+})
+
+test('deleting a non-existing blog returns 404', async () => {
+  const nonExistingId = new mongoose.Types.ObjectId()
+
+  await api
+    .delete(`/api/blogs/${nonExistingId}`)
+    .expect(404)
+})
+
+test('deleting with an invalid id returns 400', async () => {
+  await api
+    .delete('/api/blogs/12345')
+    .expect(400)
+})
+
+test('updating the likes of a blog works', async () => {
+  const newBlog = {
+    title: 'Update Test Blog',
+    author: 'Update Author',
+    url: 'http//update.com',
+    likes: 0
+  }
+  const savedBlog = await Blog.create(newBlog)
+  const updatedLikes = { likes: 42 }
+
+  const response = await api
+    .put(`/api/blogs/${savedBlog.id}`)
+    .send(updatedLikes)
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+
+  assert.strictEqual(response.body.likes, 42)
+  
+  const updatedInDb = await Blog.findById(savedBlog.id)
+  assert.strictEqual(updatedInDb.likes, 42)
+})
+
+test('updating a non-existing blog returns 404', async () => {
+  const nonExistingId = new mongoose.Types.ObjectId()
+  await api
+    .put(`/api/blogs/${nonExistingId}`)
+    .send({ likes: 99 })
+    .expect(404)
+})
+
+test('updating with an invalid id returns 400', async () => {
+  await api
+    .put('/api/blogs/12345')
+    .send({ likes: 5 })
+    .expect(400)
+})
+
+after(async () => {
   await mongoose.connection.close()
 })
