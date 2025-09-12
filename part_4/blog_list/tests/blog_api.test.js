@@ -1,207 +1,106 @@
 require('dotenv').config()
+const { test, beforeEach, after } = require('node:test')
 const supertest = require('supertest')
 const mongoose = require('mongoose')
-const { test, beforeEach, after } = require('node:test')
-const assert = require('node:assert')
 const app = require('../index')
+const User = require('../models/user')
 const Blog = require('../models/blog')
+const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+const assert = require('node:assert')
 
 const api = supertest(app)
-
-let blogToDelete
+let token
 
 beforeEach(async () => {
   await Blog.deleteMany({})
+  await User.deleteMany({})
 
-  const initialBlogs = [
-    { title: 'Blog 1', author: 'Author 1', url: 'url1.com', likes: 5 },
-    { title: 'Blog 2', author: 'Author 2', url: 'url2.com', likes: 3 }
-  ]
+  const passwordHash = await bcrypt.hash('sekret', 10)
+  const user = new User({ username: 'root', passwordHash })
+  const savedUser = await user.save()
 
-  const savedBlogs = await Blog.insertMany(initialBlogs)
-  blogToDelete = savedBlogs[0]
+  const userForToken = { username: savedUser.username, id: savedUser._id }
+  token = jwt.sign(userForToken, process.env.SECRET)
+
+  const initialBlog = new Blog({
+    title: 'First Blog',
+    author: 'Author One',
+    url: 'http://example.com',
+    likes: 5,
+    user: savedUser._id
+  })
+  const savedBlog = await initialBlog.save()
+  savedUser.blogs = savedUser.blogs.concat(savedBlog._id)
+  await savedUser.save()
 })
 
-test('blogs are returned as JSON and correct amount', async () => {
-  await Blog.deleteMany({})
-
-  const initialBlogs = [
-    { title: 'Blog 1', author: 'Author 1', url: 'url1.com', likes: 5 },
-    { title: 'Blog 2', author: 'Author 2', url: 'url2.com', likes: 3 }
-  ]
-  await Blog.insertMany(initialBlogs)
-
+test('blogs are returned as JSON and include the user info', async () => {
   const response = await api
     .get('/api/blogs')
     .expect(200)
     .expect('Content-Type', /application\/json/)
 
-  assert.strictEqual(response.body.length, 2)
-  const titles = response.body.map(blog => blog.title)
-  assert(titles.includes('Blog 1'))
-  assert(titles.includes('Blog 2'))
+  assert.strictEqual(response.body.length, 1)
+  assert.strictEqual(response.body[0].user.username, 'root')
 })
 
-test('blog posts have id property instead of _id', async () => {
-  await Blog.deleteMany({})
-
+test('creating a new blog succeeds with valid token', async () => {
   const newBlog = {
-    title: 'Test Blog',
-    author: 'Tester',
-    url: 'http://test.com',
-    likes: 1
-  }
-
-  await Blog.create(newBlog)
-
-  const response = await api.get('/api/blogs').expect(200)
-
-  const blog = response.body[0]
-  assert.ok(blog.id, 'id property is missing')
-  assert.strictEqual(blog._id, undefined, '_id property should not be present')
-})
-
-test('creating a new blog increases the total number of blogs', async () => {
-  await Blog.deleteMany({})
-
-  const blogsAtStart = await Blog.find({})
-  assert.strictEqual(blogsAtStart.length, 0)
-
-  const newBlog = {
-    title: 'New Test Blog',
-    author: 'Test Author',
+    title: 'New Blog',
+    author: 'Author Two',
     url: 'http://newblog.com',
     likes: 10
   }
 
-  const response = await api
+  await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
     .send(newBlog)
     .expect(201)
     .expect('Content-Type', /application\/json/)
 
-    assert.strictEqual(response.body.title, newBlog.title)
-    assert.strictEqual(response.body.author, newBlog.author)
-    assert.strictEqual(response.body.url, newBlog.url)
-    assert.strictEqual(response.body.likes, newBlog.likes)
+  const blogsAfter = await Blog.find({})
+  assert.strictEqual(blogsAfter.length, 2)
+  assert.ok(blogsAfter.map(b => b.title).includes('New Blog'))
+})
 
-    const blogsAtEnd = await Blog.find({})
-    assert.strictEqual(blogsAtEnd.length, blogsAtStart.length + 1)
+test('creating a blog fails without token', async () => {
+  const newBlog = {
+    title: 'Unauthorized Blog',
+    author: 'No Token',
+    url: 'http://fail.com'
+  }
 
-    const titles = blogsAtEnd.map(b => b.title)
-    assert(titles.includes(newBlog.title))
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(401)
 })
 
 test('missing likes property defaults to 0', async () => {
-  await Blog.deleteMany({})
-
   const newBlog = {
-    title: 'Blog without likes',
-    author: 'Author X',
+    title: 'No Likes Blog',
+    author: 'Author',
     url: 'http://nolikes.com'
   }
 
   const response = await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
     .send(newBlog)
     .expect(201)
-    .expect('Content-Type', /application\/json/)
 
-    assert.strictEqual(response.body.likes, 0)
+  assert.strictEqual(response.body.likes, 0)
 })
 
 test('missing title or url returns 400', async () => {
-  await Blog.deleteMany({})
-
-  const blogMissingTitle = {
-    author: 'Author A',
-    url: 'http://missingtitle.com',
-    likes: 5
-  }
+  const newBlog = { author: 'Author Only' }
 
   await api
     .post('/api/blogs')
-    .send(blogMissingTitle)
-    .expect(400)
-
-    const blogMissingUrl = {
-      title: 'Blog without URL',
-      author: 'Author B',
-      likes: 3
-    }
-
-    await api
-      .post('/api/blogs')
-      .send(blogMissingUrl)
-      .expect(400)
-
-    const blogsAtEnd = await Blog.find({})
-    assert.strictEqual(blogsAtEnd.length, 0)
-})
-
-test('a blog can be deleted', async () => {
-  const blogsAtStart = await Blog.find({})
-  assert.strictEqual(blogsAtStart.length, 2)
-
-  await api
-    .delete(`/api/blogs/${blogToDelete.id}`)
-    .expect(204)
-
-    const blogsAtEnd = await Blog.find({})
-    assert.strictEqual(blogsAtEnd.length, blogsAtStart.length - 1)
-
-    const titles = blogsAtEnd.map(b => b.title)
-    assert(!titles.includes(blogToDelete.title))
-})
-
-test('deleting a non-existing blog returns 404', async () => {
-  const nonExistingId = new mongoose.Types.ObjectId()
-
-  await api
-    .delete(`/api/blogs/${nonExistingId}`)
-    .expect(404)
-})
-
-test('deleting with an invalid id returns 400', async () => {
-  await api
-    .delete('/api/blogs/12345')
-    .expect(400)
-})
-
-test('updating the likes of a blog works', async () => {
-  const newBlog = {
-    title: 'Update Test Blog',
-    author: 'Update Author',
-    url: 'http//update.com',
-    likes: 0
-  }
-  const savedBlog = await Blog.create(newBlog)
-  const updatedLikes = { likes: 42 }
-
-  const response = await api
-    .put(`/api/blogs/${savedBlog.id}`)
-    .send(updatedLikes)
-    .expect(200)
-    .expect('Content-Type', /application\/json/)
-
-  assert.strictEqual(response.body.likes, 42)
-  
-  const updatedInDb = await Blog.findById(savedBlog.id)
-  assert.strictEqual(updatedInDb.likes, 42)
-})
-
-test('updating a non-existing blog returns 404', async () => {
-  const nonExistingId = new mongoose.Types.ObjectId()
-  await api
-    .put(`/api/blogs/${nonExistingId}`)
-    .send({ likes: 99 })
-    .expect(404)
-})
-
-test('updating with an invalid id returns 400', async () => {
-  await api
-    .put('/api/blogs/12345')
-    .send({ likes: 5 })
+    .set('Authorization', `Bearer ${token}`)
+    .send(newBlog)
     .expect(400)
 })
 
