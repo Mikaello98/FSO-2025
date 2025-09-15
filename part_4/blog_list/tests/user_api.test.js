@@ -52,7 +52,7 @@ test('deleting without token fails with 401', async () => {
     .delete(`/api/blogs/${blogToDelete._id}`)
     .expect(401)
 
-  assert.strictEqual(response.body.error, 'token missing')
+  assert.strictEqual(response.body.error, 'token missing or invalid')
 })
 
 test('deleting with another user’s token fails with 403', async () => {

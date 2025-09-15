@@ -4,6 +4,7 @@ const mongoose = require('mongoose')
 const blogsRouter = require('./routes/blogs')
 const usersRouter = require('./routes/users')
 const { tokenExtractor } = require('./middleware/tokenExtractor')
+const { userExtractor } = require('./middleware/userExtractor')
 const config =require('./utils/config')
 const loginRouter = require('./routes/login')
 
