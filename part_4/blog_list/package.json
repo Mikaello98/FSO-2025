@@ -7,10 +7,11 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "cross-env NODE_ENV=production node server.js",
     "dev": "cross-env NODE_ENV=development node --watch server.js",
     "test": "cross-env NODE_ENV=test node --test",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "start:test": "cross-env NODE_ENV=test node --watch index.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
