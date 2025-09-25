@@ -95,7 +95,7 @@ describe ('Blog app', () => {
       await page.getByRole('button', { name: 'create' }).click()
       })
 
-      test.only('Blog creatror can delete a blog', async ({ page }) => {
+      test('Blog creator can delete a blog', async ({ page }) => {
         const blog = page.locator('.blog', { hasText: 'Blog to be removed' }).first()
         await expect(blog).toBeVisible()
 
