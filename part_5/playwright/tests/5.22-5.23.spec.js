@@ -28,30 +28,9 @@ describe('Blog app', () => {
       await page.getByRole('textbox').first().fill('mluukkai')
       await page.getByRole('textbox').nth(1).fill('salainen')
       await page.getByRole('button', { name: 'login' }).click()
-
-      await page.getByRole('button', { name: 'create new blog' }).click()
-      await page.getByPlaceholder('title').fill('Protected Blog')
-      await page.getByPlaceholder('author').fill('Test author')
-      await page.getByPlaceholder('url').fill('http://protected.com')
-      await page.getByRole('button', { name: 'create' }).click()
-
-      await page.getByRole('button', { name: 'logout' }).click()
     })
 
-    test('only creator sees the remove button', async ({ page }) => {
-      await page.getByRole('textbox').first().fill('otheruser')
-      await page.getByRole('textbox').nth(1).fill('password')
-      await page.getByRole('button', { name: 'login' }).click()
-
-      const blog = page.locator('.blog', { hasText: 'Protected Blog' }).first()
-      await expect(blog).toBeVisible()
-
-      await blog.getByRole('button', { name: 'view' }).click()
-
-      await expect(blog.getByRole('button', { name: 'remove' })).toHaveCount(0)
-    })
-
-    test.only('blogs are ordered by number of likes, most liked first', async ({ page }) => {
+    test('blogs are ordered by number of likes, most liked first', async ({ page }) => {
       const blogs = [
         { title: 'Least liked blog', author: 'Author1', url: 'http://1.com'},
         { title: 'Medium liked blog', author: 'Author2', url: 'http://2.com'},
@@ -67,14 +46,14 @@ describe('Blog app', () => {
       }
 
       const allBlogs = page.locator('.blog')
-      const count = await allBlogs.count()
-      for (let i = 0; i < count; i++) {
-        await allBlogs.nth(i).getByRole('button', { name: 'view' }).click()
-      }
 
       const likeBlog = async (title, times) => {
         const blog = page.locator('.blog', { hasText: title }).first()
+        await blog.getByRole('button', { name: 'view' }).click()
+
         const likeButton = blog.getByRole('button', { name: 'like' })
+        await expect(likeButton).toBeVisible()
+        
         for (let i = 0; i < times; i++) {
           await likeButton.click()
           await page.waitForTimeout(200)
@@ -89,6 +68,34 @@ describe('Blog app', () => {
       expect(blogTexts[0]).toContain('Most liked blog')
       expect(blogTexts[1]).toContain('Medium liked blog')
       expect(blogTexts[2]).toContain('Least liked blog')
+    })
+  })
+
+    describe('Remove button visibility', () => {
+      beforeEach(async ({ page }) => {
+        await page.getByRole('textbox').first().fill('mluukkai')
+        await page.getByRole('textbox').nth(1).fill('salainen')
+        await page.getByRole('button', { name: 'login' }).click()
+
+        await page.getByRole('button', { name: 'create new blog' }).click()
+        await page.getByPlaceholder('title').fill('Protected Blog')
+        await page.getByPlaceholder('author').fill('Test author')
+        await page.getByPlaceholder('url').fill('http://protected.com')
+        await page.getByRole('button', { name: 'create' }).click()
+        await page.getByRole('button', { name: 'logout' }).click()
+      })
+
+      test('only creator sees the remove button', async ({ page }) => {
+        await page.getByRole('textbox').first().fill('otheruser')
+        await page.getByRole('textbox').nth(1).fill('password')
+        await page.getByRole('button', { name: 'login' }).click()
+
+        const blog = page.locator('.blog', { hasText: 'Protected Blog' }).first()
+        await expect(blog).toBeVisible()
+
+        await blog.getByRole('button', { name: 'view' }).click()
+
+        await expect(blog.getByRole('button', { name: 'remove' })).toHaveCount(0)
     })
   })
 })
