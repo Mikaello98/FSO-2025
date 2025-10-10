@@ -1,10 +1,9 @@
-import { useState, useEffect, createRef } from 'react'
-import { useDispatch } from 'react-redux'
+import { useEffect, createRef, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { showNotification } from './reducers/notificationReducer'
+import { initializeBlogs, createBlog, likeBlog, deleteBlog } from './reducers/blogReducer'
+import { loginUser, logoutUser, setUserFromStorage } from './reducers/userReducer'
 
-import blogService from './services/blogs'
-import loginService from './services/login'
-import storage from './services/storage'
 import Login from './components/Login'
 import Blog from './components/Blog'
 import NewBlog from './components/NewBlog'
@@ -13,71 +12,58 @@ import Togglable from './components/Togglable'
 
 
 const App = () => {
-  const [blogs, setBlogs] = useState([])
-  const [user, setUser] = useState(null)
-
   const dispatch = useDispatch()
-
-  const notify = (msg) => {
-    dispatch(showNotification(msg))
-  }
-
-  useEffect(() => {
-    blogService.getAll().then((blogs) => setBlogs(blogs))
-  }, [])
-
-  useEffect(() => {
-    const user = storage.loadUser()
-    if (user) {
-      setUser(user)
-    }
-  }, [])
+  const blogs = useSelector((state) => state.blogs)
+  const user = useSelector((state) => state.user)
 
   const blogFormRef = createRef()
 
+  const notify = (msg, type = 'success') => {
+    dispatch(showNotification({ message: msg, type }))
+  }
+
+  useEffect(() => {
+    dispatch(initializeBlogs())
+  }, [dispatch])
+
+  useEffect(() => {
+    dispatch(setUserFromStorage())
+  }, [dispatch])
+
   const handleLogin = async (credentials) => {
     try {
-      const user = await loginService.login(credentials)
-      setUser(user)
-      storage.saveUser(user)
+      await dispatch(loginUser(credentials))
       notify(`Welcome back, ${user.name}`)
     } catch (error) {
       notify('Wrong credentials', 'error')
     }
   }
 
+  const handleLogout = () => {
+    const name = user?.name
+    dispatch(logoutUser())
+    notify(`${name} logged out`)
+  }
+
   const handleCreate = async (blog) => {
-    const newBlog = await blogService.create(blog)
-    setBlogs(blogs.concat(newBlog))
-    notify(`Blog created: ${newBlog.title}, ${newBlog.author}`)
+    await dispatch(createBlog(blog))
+    notify(`Blog created: ${blog.title}, ${blog.author}`)
     blogFormRef.current.toggleVisibility()
   }
 
-  const handleVote = async (blog) => {
-    console.log('updating', blog)
-    const updatedBlog = await blogService.update(blog.id, {
-      ...blog,
-      likes: blog.likes + 1,
-    })
-
-    notify(`You liked ${updatedBlog.title} by ${updatedBlog.author}`)
-    setBlogs(blogs.map((b) => (b.id === blog.id ? updatedBlog : b)))
+  const handleVote = (blog) => {
+    dispatch(likeBlog(blog))
+    notify(`You liked: ${blog.title} by ${blog.author}`)
   }
 
-  const handleLogout = () => {
-    const name = user?.name
-    setUser(null)
-    storage.removeUser()
-    notify(`Bye, ${name}!`)
-  }
-
-  const handleDelete = async (blog) => {
-    if (window.confirm(`Remove blog ${blog.title} by ${blog.author}`)) {
-      await blogService.remove(blog.id)
-      setBlogs(blogs.filter((b) => b.id !== blog.id))
-      notify(`Blog ${blog.title}, by ${blog.author} removed`)
+  const handleDelete = (blog) => {
+    if (window.confirm(`Remove blog ${blog.title} by ${blog.author}?`)) {
+      dispatch(deleteBlog(blog))
+      notify(`Blog removed: ${blog.title} by ${blog.author}`)
     }
   }
+
+  const byLikes = (a, b) => b.likes - a.likes
 
   if (!user) {
     return (
@@ -88,8 +74,6 @@ const App = () => {
       </div>
     )
   }
-
-  const byLikes = (a, b) => b.likes - a.likes
 
   return (
     <div>
@@ -102,9 +86,17 @@ const App = () => {
       <Togglable buttonLabel="create new blog" ref={blogFormRef}>
         <NewBlog doCreate={handleCreate} />
       </Togglable>
-      {blogs.sort(byLikes).map((blog) => (
-        <Blog key={blog.id} blog={blog} handleVote={handleVote} handleDelete={handleDelete} />
-      ))}
+      {blogs
+        .slice()
+        .sort(byLikes)
+        .map((blog) => (
+          <Blog 
+            key={blog.id} 
+            blog={blog} 
+            handleVote={() => handleVote(blog)}
+            handleDelete={() => handleDelete(blog)}
+          />
+        ))}
     </div>
   )
 }
