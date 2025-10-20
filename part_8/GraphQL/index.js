@@ -1,6 +1,6 @@
 const { ApolloServer } = require('@apollo/server')
 const { startStandaloneServer } = require('@apollo/server/standalone')
-const { GraphlQLError } = require('graphql')
+const { GraphQLError } = require('graphql')
 const mongoose = require('mongoose')
 const jwt = require('jsonwebtoken')
 
@@ -14,7 +14,7 @@ const JWT_SECRET = 'SALAISUUS'
 mongoose.set('strictQuery', false)
 console.log('connecting to', MONGODB_URI)
 
-mongoose.conncect(MONGODB_URI)
+mongoose.connect(MONGODB_URI)
   .then(() => console.log('connected to MongoDB'))
   .catch((error) => console.log('error connection to MongoDB:', error.message))
 
@@ -29,7 +29,7 @@ const typeDefs = `
 
   type Book {
     title: String!
-    author: String!
+    author: Author!
     published: Int!
     genres: [String!]!
     id: ID!
@@ -108,7 +108,7 @@ const resolvers = {
     addBook: async (root, args, context) => {
       const currentUser = context.currentUser
       if (!currentUser) {
-        throw new GraphlQLError('not authenticated', {
+        throw new GraphQLError('not authenticated', {
           extensions: { code: 'UNAUTHENTICATED' }
         })
       }
@@ -120,9 +120,9 @@ const resolvers = {
         }
         const book = new Book({ ...args, author: author._id })
         await book.save()
-        return book.populate('author')
+        return await book.populate('author')
       } catch (error) {
-        throw new GraphlQLError('error.message', {
+        throw new GraphQLError(error.message, {
           extensions: {
             code: 'BAD_USER_INPUT',
             invalidArgs: args,
@@ -131,16 +131,16 @@ const resolvers = {
       }
     },
 
-    editAuthor: async (root, args) => {
+    editAuthor: async (root, args, context) => {
       const currentUser = context.currentUser
       if (!currentUser) {
-        throw new GraphlQLError('not authenticated', {
+        throw new GraphQLError('not authenticated', {
           extensions: { code: 'UNAUTHENTICATED' }
         })
       }
       const author = await Author.findOne({ name: args.name })
       if (!author) {
-        throw new GraphlQLError('author not found', {
+        throw new GraphQLError('author not found', {
           extensions: { code: 'BAD_USER_INPUT', invalidArgs: args.name }
         })
       }
@@ -155,7 +155,7 @@ const resolvers = {
       try {
         return await user.save()
       } catch (error) {
-        throw new GraphlQLError('error.message', {
+        throw new GraphQLError(error.message, {
           extensions: {
             code: 'BAD_USER_INPUT',
             invalidArgs: args,
@@ -168,7 +168,7 @@ const resolvers = {
     login: async (root, args) => {
       const user = await User.findOne({ username: args.username })
       if (!user || args.password !== 'secret') {
-        throw new GraphlQLError('wrong credentials', {
+        throw new GraphQLError('wrong credentials', {
           extensions: { code: 'BAD_USER_INPUT' }
         })
       }
@@ -198,7 +198,7 @@ startStandaloneServer(server, {
         const decodedToken = jwt.verify(token, JWT_SECRET)
         const currentUser = await User.findById(decodedToken.id)
         return { currentUser }
-      } catch (e) {
+      } catch {
         return { currentUser: null }
       }
     }
