@@ -13,6 +13,7 @@
     "@apollo/server": "^5.0.0",
     "@graphql-tools/schema": "^10.0.25",
     "cors": "^2.8.5",
+    "dataloader": "^2.2.3",
     "express": "^5.1.0",
     "graphql": "^16.11.0",
     "graphql-subscriptions": "^3.0.0",

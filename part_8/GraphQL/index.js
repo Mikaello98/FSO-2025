@@ -103,14 +103,13 @@ const resolvers = {
       return books
     },
 
-    allAuthors: async () => {
-      const authors = await Author.find({})
-      const books = await Book.find({}).populate('author')
+    allAuthors: async () => ({}),
+    me: (root, args, context) => context.currentUser
+  },
 
-      return authors.map(a => ({
-        ...a._doc,
-        bookCount: books.filter(b => b.author.name === a.name).length
-      }))
+  Author: {
+    bookCount: async (root, args, context) => {
+      return context.bookCountLoader.load(root._id)
     }
   },
 
@@ -232,6 +231,8 @@ app.use(
   expressMiddleWare(server, {
     context: async ({ req }) => {
       const auth = req ? req.headers.authorization : null
+      let currentUser = null
+      
       if (auth && auth.toLowerCase().startsWith('bearer ')) {
         try {
           const decodedToken = jwt.verify(auth.substring(7), JWT_SECRET)
@@ -241,7 +242,7 @@ app.use(
           return { currentUser: null }
         }
       }
-      return { currentUser: null }
+      return { currentUser, bookCountLoader }
     }
   })
 )
