@@ -1,6 +1,6 @@
-function bmiCalculator(heightCm: number, weightKg: number): string {
-  if (heightCm <= 0 || weightKg <= 0) {
-    return 'Invalid input'
+export function bmiCalculator(heightCm: number, weightKg: number): string {
+  if (isNaN(heightCm) || isNaN(weightKg) || heightCm <= 0 || weightKg <= 0) {
+    throw new Error('Both height and weight must be positive numbers.');
   }
 
   const heightM = heightCm / 100;
@@ -17,4 +17,22 @@ function bmiCalculator(heightCm: number, weightKg: number): string {
   }
 }
 
-console.log(bmiCalculator(180, 74));
+if (require.main === module) {
+  try {
+    const args = process.argv.slice(2);
+    if (args.length < 2) {
+      throw new Error('Please provide both height (cm) and weight (kg).');
+    }
+
+    const height = Number(args[0]);
+    const weight = Number(args[1]);
+
+    console.log(bmiCalculator(height, weight));
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.log('Error:', error.message);
+    } else {
+      console.log('An unknown error occured.');
+    }
+  }
+}

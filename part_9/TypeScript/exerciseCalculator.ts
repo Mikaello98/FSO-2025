@@ -10,16 +10,15 @@ interface ExerciseResult {
 
 function calculateExercises(dailyHours: number[], target: number): ExerciseResult {
   if (dailyHours.length === 0) {
-    throw new Error('Daily hours array cannot be empty');
+    throw new Error('Please provide at least one day of exercise data');
   }
-  if (target <= 0) {
+  if (isNaN(target) || target <= 0) {
     throw new Error('Target must be a positive number');
   }
 
   const periodLength = dailyHours.length;
   const trainingDays = dailyHours.filter(h => h > 0).length;
-  const totalHours = dailyHours.reduce((sum, h) => sum + h, 0);
-  const average = totalHours / periodLength;
+  const average = dailyHours.reduce((a, b) => a + b, 0) / periodLength;
   const success = average >= target;
 
   let rating: number;
@@ -47,5 +46,25 @@ function calculateExercises(dailyHours: number[], target: number): ExerciseResul
   };
 }
 
-const result = calculateExercises([3, 0, 2, 4.5, 0, 3, 1], 2);
-console.log(result)
+try {
+  const args = process.argv.slice(2);
+
+  if (args.length < 2) {
+    throw new Error('Please provide a target and at least one day of exercise hours.');
+  }
+
+  const target = Number(args[0]);
+  const dailyHours = args.slice(1).map(n => {
+    const value = Number(n);
+    if (isNaN(value)) throw new Error('All daily exercise values must be numbers.');
+    return value;
+  });
+
+  console.log(calculateExercises(dailyHours, target));
+} catch (error: unknown) {
+  if (error instanceof Error) {
+    console.log('Error:', error.message);
+  } else {
+    console.log('An unknown error occured.');
+  }
+}
