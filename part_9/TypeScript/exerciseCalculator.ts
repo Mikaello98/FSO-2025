@@ -1,4 +1,4 @@
-interface ExerciseResult {
+export interface ExerciseResult {
   periodLength: number;
   trainingDays: number;
   success: boolean;
@@ -8,7 +8,7 @@ interface ExerciseResult {
   average: number;
 }
 
-function calculateExercises(dailyHours: number[], target: number): ExerciseResult {
+export function calculateExercises(dailyHours: number[], target: number): ExerciseResult {
   if (dailyHours.length === 0) {
     throw new Error('Please provide at least one day of exercise data');
   }
@@ -46,25 +46,27 @@ function calculateExercises(dailyHours: number[], target: number): ExerciseResul
   };
 }
 
-try {
-  const args = process.argv.slice(2);
+if (require.main === module) {
+  try {
+    const args = process.argv.slice(2);
 
-  if (args.length < 2) {
-    throw new Error('Please provide a target and at least one day of exercise hours.');
-  }
+    if (args.length < 2) {
+      throw new Error('Please provide a target and at least one day of exercise hours.');
+    }
 
-  const target = Number(args[0]);
-  const dailyHours = args.slice(1).map(n => {
-    const value = Number(n);
-    if (isNaN(value)) throw new Error('All daily exercise values must be numbers.');
-    return value;
-  });
+    const target = Number(args[0]);
+    const dailyHours = args.slice(1).map(n => {
+      const value = Number(n);
+      if (isNaN(value)) throw new Error('All daily exercise values must be numbers.');
+      return value;
+    });
 
-  console.log(calculateExercises(dailyHours, target));
-} catch (error: unknown) {
-  if (error instanceof Error) {
-    console.log('Error:', error.message);
-  } else {
-    console.log('An unknown error occured.');
+    console.log(calculateExercises(dailyHours, target));
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.log('Error:', error.message);
+    } else {
+      console.log('An unknown error occured.');
+    }
   }
 }
