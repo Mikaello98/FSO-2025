@@ -37,8 +37,30 @@ app.get('/bmi', (req, res) => {
 app.post('/exercises', (req, res) => {
   const { daily_exercises, target } = req.body;
 
-const PORT = 3003;
+  if (!daily_exercises || target === undefined) {
+    return res.status(400).json({ error: 'parameters missing' });
+  }
 
+  if (
+    !Array.isArray(daily_exercises) ||
+    isNaN(Number(target)) ||
+    !daily_exercises.every((n: unknown) => typeof n === 'number' && !isNaN(n))
+  ) {
+    return res.status(400).json({ error: 'malformatted parameters' });
+  }
+
+  try {
+    const result = calculateExercises(daily_exercises, Number(target));
+    return res.json(result);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return res.status(400).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'unknown error' });
+  }
+});
+
+const PORT = 3003;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
