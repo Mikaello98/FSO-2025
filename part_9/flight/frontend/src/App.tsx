@@ -35,20 +35,20 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className='app'>
+    <div>
       <header>
         <h1>Ilari's Flight Diaries</h1>
       </header>
       <main>
-        <section className='form-section'>
+        <section>
           <h2>Add entry</h2>
           <NewDiaryForm onSubmit={handleAdd} />
         </section>
 
-        <section className='list-section'>
+        <section>
           <h2>Entries</h2>
           {loading && <p>Loading diaries...</p>}
-          {error && <p className='error'>{error}</p>}
+          {error && <p>{error}</p>}
           {!loading && !error && <DiaryList diaries={diaries} />}
         </section>
       </main>

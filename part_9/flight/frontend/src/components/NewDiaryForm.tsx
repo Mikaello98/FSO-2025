@@ -8,7 +8,7 @@ interface Props {
 const NewDiaryForm: React.FC<Props> = ({ onSubmit }) => {
   const [date, setDate] = useState<string>('');
   const [weather, setWeather] = useState<Weather>(Weather.Sunny);
-  const [visibility, setVisibility] = useState<Visibility>(Visibility.Good);
+  const [visibility, setVisibility] = useState<Visibility>(Visibility.Great);
   const [comment, setComment] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,7 @@ const NewDiaryForm: React.FC<Props> = ({ onSubmit }) => {
       await onSubmit(newEntry);
       setDate('');
       setWeather(Weather.Sunny);
-      setVisibility(Visibility.Good);
+      setVisibility(Visibility.Great);
       setComment('');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -43,9 +43,9 @@ const NewDiaryForm: React.FC<Props> = ({ onSubmit }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className='new-diary-form'>
-      <div className='form-row'>
-        <label htmlFor="date">Date</label>
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>Date</label>
         <input 
           type="date" 
           value={date} 
@@ -55,26 +55,40 @@ const NewDiaryForm: React.FC<Props> = ({ onSubmit }) => {
         />
       </div>
 
-      <div className='form-row'>
-        <label htmlFor="weather">Weather</label>
-        <select value={weather} id="weather" onChange={(e) => setWeather(e.target.value as Weather)}>
-          {Object.values(Weather).map((w) => (
-            <option key={w} value={w}>{w}</option>
-          ))}
-        </select>
+      <div>
+        <h4>Weather</h4>
+        {Object.values(Weather).map(w => (
+          <label key={w}>
+            <input
+              type="radio"
+              name='weather'
+              value={w}
+              checked={weather === w} 
+              onChange={() => setWeather(w)}
+            />
+            {w}
+          </label>
+        ))}
       </div>
 
-      <div className='form-row'>
-        <label htmlFor="visibility">Visibility</label>
-        <select id="visibility" value={visibility} onChange={(e) => setVisibility(e.target.value as Visibility)}>
-          {Object.values(Visibility).map((v) => (
-            <option key={v} value={v}>{v}</option>
-          ))}
-        </select>
+      <div>
+        <h4>Visibility</h4>
+        {Object.values(Visibility).map(v => (
+          <label key={v}>
+            <input
+              type="radio"
+              name='visibility'
+              value={v}
+              checked={visibility === v}
+              onChange={() => setVisibility(v)}
+            />
+            {v}
+          </label>
+        ))}
       </div>
 
-      <div className='form-row'>
-        <label htmlFor="comment">Comment</label>
+      <div>
+        <label>Comment</label>
         <textarea 
           id="comment" 
           value={comment} 
