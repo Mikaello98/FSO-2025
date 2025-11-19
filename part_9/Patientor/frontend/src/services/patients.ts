@@ -3,8 +3,8 @@ import { Patient, PatientFormValues } from "../types";
 
 import { apiBaseUrl } from "../constants";
 
-const getById = async (id: string): Promise<Patient> => {
-  const { data } = await axios.get(`${apiBaseUrl}/${id}`);
+const getById = async (id: string) => {
+  const { data } = await axios.get(`${apiBaseUrl}/patients/${id}`);
   return data;
 }
 
