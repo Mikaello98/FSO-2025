@@ -1,5 +1,5 @@
-import { NewPatientSchema } from './schemas/patientSchema';
-import { NewPatient } from './types';
+import { NewPatientSchema } from '../schemas/patientSchema';
+import { NewPatient } from '../types';
 
 export const toNewPatient = (object: unknown): NewPatient => {
 
