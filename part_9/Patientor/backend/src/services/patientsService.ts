@@ -1,6 +1,6 @@
 import { v1 as uuid } from 'uuid';
 import patients from '../data/patients';
-import { NonSensitivePatient, NewPatient, Patient, Entry } from '../types';
+import { NonSensitivePatient, NewPatient, Patient, Entry, NewEntry } from '../types';
 
 const getPatients = (): Patient[] => {
   return patients;
@@ -35,10 +35,10 @@ const addEntry = (patientId: string, entry: NewEntry): Patient => {
     throw new Error('Patient not found');
   }
 
-  const newEntry: Entry = {
+  const newEntry = {
   id: uuid(),
   ...entry
-};
+} as Entry;
 
 patient.entries.push(newEntry);
 return patient;

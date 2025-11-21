@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 export const BaseEntrySchema = z.object({
   description: z.string(),
-  date: z.string().date(),
+  date: z.iso.date(),
   specialist: z.string(),
   diagnosisCodes: z.array(z.string()).optional()
 });
