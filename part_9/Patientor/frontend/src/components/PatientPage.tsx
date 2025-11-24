@@ -1,48 +1,49 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import { useParams } from "react-router-dom";
 import patientService from '../services/patients';
 import diagnosesService from '../services/diagnoses'
-import { Patient, Diagnosis, NewEntry as NewEntryType } from '../types'
+import { Patient, Diagnosis, NewEntry } from '../types'
+import EntryFormModal from "./EntryFormModal";
 
 const PatientPage = () => {
   const { id } = useParams<{ id: string }>();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
+  
+  const [modalOpen, setModalOpen] = useState(false);
+  const [error, setError] = useState<string>();
 
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState('');
-  const [specialist, setSpecialist] = useState('');
+  const openModal = () => setModalOpen(true);
+  const closeModal = () => {
+    setModalOpen(false);
+    setError(undefined);
+  };
 
-  const submitEntry = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitNewEntry = async (entry: NewEntry) => {
     if (!patient) return;
 
-    const newEntry: NewEntryType = {
-      type: 'HealthCheck',
-      description,
-      date,
-      specialist,
-      healthCheckRating: 0
+    try {
+      const updated = await patientService.addEntry(patient.id, entry);
+      setPatient(updated);
+      closeModal();
+    } catch (e: unknown) {
+      if (axios.isAxiosError(e) && e.response?.data) {
+        setError(String(e.response.data));
+      } else {
+        setError('Unknown error');
+      }
     };
-
-    const updatedPatient = await patientService.addEntry(patient.id, newEntry);
-    setPatient(updatedPatient);
-
-    setDescription('');
-    setDate('');
-    setSpecialist('');
   };
 
   useEffect(() => {
     const fetchData= async () => {
       if (!id) return;
-      const patientData = await patientService.getById(id);
-      setPatient(patientData);
-
-      const diagnosesData = await diagnosesService.getAll();
-      setDiagnoses(diagnosesData);
+      const p = await patientService.getById(id);
+      const d = await diagnosesService.getAll();
+      setPatient(p)
+      setDiagnoses(d);
     };
-
     void fetchData();
   }, [id]);
 
@@ -50,6 +51,13 @@ const PatientPage = () => {
 
   return (
     <div>
+      <EntryFormModal
+        modalOpen={modalOpen}
+        onSubmit={submitNewEntry}
+        onClose={closeModal}
+        error={error}
+      />
+      
       <h2>{patient.name}</h2>
       <p><strong>Gender:</strong> {patient.gender}</p>
       <p><strong>SSN:</strong> {patient.ssn}</p>
@@ -96,34 +104,13 @@ const PatientPage = () => {
       ))}
 
       <h3>Add New Entry</h3>
-      <form onSubmit={submitEntry}>
+      { error && (
         <div>
-          Description:
-          <input
-            value={description}
-            onChange={e => setDescription(e.target.value)} 
-          />
+          {error}
         </div>
+      )}
 
-        <div>
-          Date:
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)} 
-          />
-        </div>
-
-        <div>
-          Specialist:
-          <input
-            value={specialist}
-            onChange={e => setSpecialist(e.target.value)} 
-          />
-        </div>
-
-        <button type="submit">Add Entry</button>
-      </form>
+      <button onClick={openModal}>Add Entry</button>
     </div>
   );
 };
