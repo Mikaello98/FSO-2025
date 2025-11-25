@@ -31,7 +31,7 @@ const HealthRatingBar = ({ rating, showText }: BarProps) => {
   return (
     <div className="health-bar">
       <StyledRating
-        rating={rating}                // ← REQUIRED
+        rating={rating}                
         readOnly
         value={4 - rating}             // invert for hearts
         max={4}
