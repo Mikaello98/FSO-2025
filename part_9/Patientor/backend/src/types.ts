@@ -26,7 +26,7 @@ export interface HospitalEntry extends BaseEntry {
   };
 }
 
-export interface OccupationalHealthCareEntry extends BaseEntry {
+export interface OccupationalHealthcareEntry extends BaseEntry {
   type: 'OccupationalHealthcare';
   employerName: string;
   sickLeave?: {
@@ -57,7 +57,7 @@ export interface Patient {
   entries: Entry[]
 }
 
-export type Entry = | HealthCheckEntry | HospitalEntry | OccupationalHealthCareEntry;
+export type Entry = | HealthCheckEntry | HospitalEntry | OccupationalHealthcareEntry;
 export type NewPatient = Omit<Patient, 'id'>;
 export type NonSensitivePatient = Omit<Patient, 'ssn' | 'entries'>;
 export type NewEntry = Omit<Entry, 'id'>;

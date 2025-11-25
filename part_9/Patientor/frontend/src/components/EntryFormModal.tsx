@@ -1,25 +1,30 @@
-import React from "react";
+import { Dialog, DialogTitle, DialogContent, Divider, Alert } from '@mui/material';
 import AddEntryForm from "./AddEntryForm";
+import { NewEntry, Diagnosis } from "../types";
 
 interface Props {
   modalOpen: boolean;
-  onSubmit: (values: any) => void;
+  onSubmit: (values: NewEntry) => void;
   onClose: () => void;
   error?: string;
+  diagnoses: Diagnosis[];
 }
 
-const EntryFormModal: React.FC<Props> = ({ modalOpen, onSubmit, onClose, error }) => {
-  if (!modalOpen) return null;
+const EntryFormModal = ({ modalOpen, onSubmit, onClose, error, diagnoses }: Props) => (
+  <Dialog fullWidth open={modalOpen} onClose={onClose}>
+    <DialogTitle>Add New Entry</DialogTitle>
+    <Divider />
 
-  return (
-    <div>
-      <div>
-        {error && <div style={{ color: 'red' }}>{error}</div>}
+    <DialogContent>
+      {error && <Alert severity="error">{error}</Alert>}
 
-        <AddEntryForm onSubmit={onSubmit} onCancel={onClose} />
-      </div>
-    </div>
-  );
-};
+      <AddEntryForm
+        onSubmit={onSubmit}
+        onCancel={onClose}
+        diagnoses={diagnoses}
+      />
+    </DialogContent>
+  </Dialog>
+);
 
 export default EntryFormModal;
