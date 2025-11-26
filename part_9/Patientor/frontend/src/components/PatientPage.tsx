@@ -88,10 +88,11 @@ const PatientPage = () => {
       <p><strong>Occupation:</strong> {patient.occupation}</p>
 
       <Typography variant="h5" sx={{ mt: 2 }}>Entries</Typography>
-      {patient.entries.map(entry => (
+      {patient.entries?.map(entry => (
         <Box key={entry.id} sx={{ border: "1px solid #ccc", p: 2, mt: 1 }}>
           <strong>{entry.date}</strong> — {entry.type}
           <p>{entry.description}</p>
+          <p><em>Diagnosed by {entry.specialist}</em></p>
 
           {entry.diagnosisCodes?.map(code => {
             const diag = diagnoses.find(d => d.code === code);

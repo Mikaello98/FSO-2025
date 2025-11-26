@@ -21,28 +21,51 @@ const getPatient = (id: string): Patient | undefined => {
 };
 
 const addPatient = (patient: NewPatient): Patient => {
-  const newPatient = {
+  const newPatient: Patient = {
     id: uuid(),
+    entries: [],
     ...patient
   };
   patients.push(newPatient);
   return newPatient;
 };
 
-const addEntry = (patientId: string, entry: NewEntry): Patient => {
+const addEntry = (patientId: string, entry: NewEntry): Entry => {
   const patient = patients.find(p => p.id === patientId);
-  if (!patient) {
-    throw new Error('Patient not found');
+  if (!patient) throw new Error('Patient not found');
+
+  let newEntry: Entry;
+
+  switch (entry.type) {
+    case "HealthCheck":
+      newEntry = {
+        ...entry,
+        id: uuid(),
+      };
+      break;
+
+    case "Hospital":
+      newEntry = {
+        ...entry,
+        id: uuid(),
+      };
+      break;
+
+    case "OccupationalHealthcare":
+      newEntry = {
+        ...entry,
+        id: uuid(),
+      };
+      break;
+
+    default:
+      throw new Error("Unhandled entry type");
   }
 
-  const newEntry = {
-  id: uuid(),
-  ...entry
-} as Entry;
-
-patient.entries.push(newEntry);
-return patient;
+  patient.entries.push(newEntry);
+  return newEntry;
 };
+
 
 export default {
   getPatients,

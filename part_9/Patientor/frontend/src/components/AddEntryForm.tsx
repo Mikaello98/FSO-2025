@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, Grid, OutlinedInput, Checkbox, ListItemText } from "@mui/material";
+import { Box, TextField, Select, MenuItem, FormControl, InputLabel, Button, Typography, Grid, OutlinedInput, Checkbox, ListItemText, Alert } from "@mui/material";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 
@@ -38,7 +38,34 @@ const AddEntryForm = ({ onSubmit, onCancel, diagnoses }: Props) => {
   const [sickStart, setSickStart] = useState('');
   const [sickEnd, setSickEnd] = useState('');
 
+  const [localError, setLocalError] = useState<string | undefined>();
+
   const handleSubmit = () => {
+    if (!description.trim()) {
+      setLocalError('Description is required');
+      return;
+    }
+    if (!date()) {
+      setLocalError('Date is required');
+      return;
+    }
+    if (!specialist.trim()) {
+      setLocalError('Specialist is required');
+      return;
+    }
+    if (type === 'Hospital') {
+      if (!dischargeDate || !dischargeCriteria) {
+        setLocalError('Discharge date and criteria are required for Hospital entries');
+      }
+    }
+    if (type === 'OccupationalHealthcare') {
+      if (!employerName.trim()) {
+        setLocalError('Employer name is required for Occupational Healthcare entries');
+      }
+    }
+
+    setLocalError(undefined);
+
     let entry: NewEntry;
 
     switch (type) {
@@ -86,6 +113,7 @@ const AddEntryForm = ({ onSubmit, onCancel, diagnoses }: Props) => {
 
   return (
     <Box sx={{ p: 2, maxWidth: 500 }}>
+      {localError && <Alert severity="error" sx={{ mb: 1 }}>{localError}</Alert>}
       <Typography variant='h6' mb={2}>
         Add New Entry
       </Typography>
