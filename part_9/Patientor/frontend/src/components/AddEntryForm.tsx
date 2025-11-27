@@ -41,12 +41,18 @@ const AddEntryForm = ({ onSubmit, onCancel, diagnoses }: Props) => {
   const [localError, setLocalError] = useState<string | undefined>();
 
   const handleSubmit = () => {
+    const isoDateRegex= /^\d{4}-\d{2}-\d{2}$/;
+
     if (!description.trim()) {
       setLocalError('Description is required');
       return;
     }
-    if (!date()) {
+    if (!date) {
       setLocalError('Date is required');
+      return;
+    }
+    if (!isoDateRegex.test(date)) {
+      setLocalError("Date must be in format YYYY-MM-DD");
       return;
     }
     if (!specialist.trim()) {
