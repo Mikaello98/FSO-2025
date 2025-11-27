@@ -47,8 +47,8 @@ const PatientPage = () => {
 
       closeModal();
     } catch (e: unknown) {
-      if (axios.isAxiosError(e) && e.response?.data) {
-        setError(String(e.response.data));
+      if (axios.isAxiosError(e) && e.response?.data?.error) {
+        setError(JSON.stringify(e.response.data.error));
       } else {
         setError("Unknown error");
       }

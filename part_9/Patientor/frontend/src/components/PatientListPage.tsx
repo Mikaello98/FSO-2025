@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Box, Table, Button, TableHead, Typography, TableCell, TableRow, TableBody } from '@mui/material';
 import axios from 'axios';
 
-import { PatientFormValues, Patient } from "../../types";
-import AddPatientModal from "../AddPatientModal";
+import { PatientFormValues, Patient } from "../types";
+import AddPatientModal from "./AddPatientModal";
 
-import HealthRatingBar from "../HealthRatingBar";
+import HealthRatingBar from "./HealthRatingBar";
 
-import patientService from "../../services/patients";
+import patientService from "../services/patients";
 import { Link } from "react-router-dom";
 
 interface Props {
@@ -34,17 +34,20 @@ const PatientListPage = ({ patients, setPatients } : Props ) => {
       setModalOpen(false);
     } catch (e: unknown) {
       if (axios.isAxiosError(e)) {
-        if (e?.response?.data && typeof e?.response?.data === "string") {
-          const message = e.response.data.replace('Something went wrong. Error: ', '');
-          console.error(message);
-          setError(message);
-        } else {
-          setError("Unrecognized axios error");
+        const zodErrors = e.response?.data?.error;
+
+        if (Array.isArray(zodErrors)) {
+          const messages = zodErrors.map(err => err.message).join('\n');
+          setError(messages);
+          return;
         }
-      } else {
-        console.error("Unknown error", e);
-        setError("Unknown error");
+
+        setError('Unknown Axios error');
+        return;
       }
+        
+      console.error("Non-Axios error", e);
+      setError("Unknown error");
     }
   };
 
